@@ -6,14 +6,15 @@ steps:
 
 - powershell: |
     git submodule update --init
-    ./gyp_library.py
+    $env:GYP_MSVS_VERSION="2022"
+    python3 .\gyp_library.py $(arch)
+    #Dir -Recurse . | Get-Childitem
   displayName: Generate project solution
 
 - task: MSBuild@1
   inputs:
     solution: out/main.sln
     msbuildArchitecture: $(arch)
-    configuration: 'release'
 
 - task: PublishPipelineArtifact@0
   inputs:

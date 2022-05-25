@@ -1,6 +1,6 @@
 ; Declares the module parameters.
 
-LIBRARY      EXPLORER_COMMAND.DLL
+LIBRARY
 
 EXPORTS
   DllGetClassObject         PRIVATE
