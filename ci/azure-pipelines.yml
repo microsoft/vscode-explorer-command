@@ -1,0 +1,30 @@
+trigger:
+  branches:
+    include: ['*']
+  tags:
+    include: ['*']
+
+jobs:
+- job: Windows
+  pool:
+    vmImage: windows-latest
+  variables:
+    arch: x64
+  steps:
+  - template: build-win32.yml
+
+- job: Windows32
+  pool:
+    vmImage: windows-latest
+  variables:
+    arch: x86
+  steps:
+  - template: build-win32.yml
+
+- job: WindowsArm64
+  pool:
+    vmImage: windows-latest
+  variables:
+    arch: arm64
+  steps:
+  - template: build-win32.yml

@@ -1,0 +1,22 @@
+steps:
+- task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.x"
+      addToPath: true
+
+- powershell: |
+    git submodule update --init
+    ./gyp_library.py
+  displayName: Generate project solution
+
+- task: MSBuild@1
+  inputs:
+    solution: out/main.sln
+    msbuildArchitecture: $(arch)
+    configuration: 'release'
+
+- task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: output-$(arch)
+      targetPath: out/Default
+  displayName: "Publish DLL"
