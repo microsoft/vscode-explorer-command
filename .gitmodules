@@ -1,0 +1,3 @@
+[submodule "node-gyp"]
+	path = node-gyp
+	url = https://github.com/nodejs/node-gyp
