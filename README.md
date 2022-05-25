@@ -1,14 +1,12 @@
-# Project
+# vscode-explorer-command
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+> Generates shell extension dll for x86, x64 and arm64 windows
 
-As the maintainer of this project, please make a few updates:
-
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+Allows extending the Windows 11 context menu once published as a
+sparse package. This repository is only responsible for creating
+the shell extensions, `microsoft/vscode` is responsible for generating
+relevant sparse package as part of its product pipeline, code sign it
+via ESRP and install it through Inno.
 
 ## Contributing
 
