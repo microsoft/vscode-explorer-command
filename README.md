@@ -4,9 +4,8 @@
 
 Allows extending the Windows 11 context menu once published as a
 sparse package. This repository is only responsible for creating
-the shell extensions, `microsoft/vscode` is responsible for generating
-relevant sparse package as part of its product pipeline, code sign it
-via ESRP and install it through Inno.
+the shell extensions and unsigned sparse package, `microsoft/vscode` is responsible
+for code signing and installing it through Inno.
 
 ## Contributing
 
