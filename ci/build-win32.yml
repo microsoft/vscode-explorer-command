@@ -16,8 +16,31 @@ steps:
     solution: out/main.sln
     msbuildArchitecture: $(arch)
 
+- powershell: |
+    python3 .\scripts\generate_pkg.py code $(arch) .\template\AppxManifest.xml
+    python3 .\scripts\generate_pkg.py code_insiders $(arch) .\template\AppxManifest.xml
+    $sdk = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64"
+    #echo $makeappx
+    #Dir -Recurse "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\$(arch)" | Get-Childitem
+    $env:Path += ';' + $sdk
+    makeappx pack /d "out/code_explorer_pkg_$(arch)" /p "out/code_explorer_$(arch).appx" /nv
+    makeappx pack /d "out/code_insiders_explorer_pkg_$(arch)" /p "out/code_insiders_explorer_$(arch).appx" /nv
+  displayName: Create sparse pkg
+
 - task: PublishPipelineArtifact@0
   inputs:
-    artifactName: output-$(arch)
+    artifactName: output-dll-$(arch)
     targetPath: out/Default
-  displayName: "Publish DLL"
+  displayName: "Publish DLL artifacts"
+
+- task: PublishPipelineArtifact@0
+  inputs:
+    artifactName: output-code-$(arch)
+    targetPath: out/code_explorer_$(arch).appx
+  displayName: "Publish Code spare package"
+
+- task: PublishPipelineArtifact@0
+  inputs:
+    artifactName: output-code-insiders-$(arch)
+    targetPath: out/code_insiders_explorer_$(arch).appx
+  displayName: "Publish Code-Insiders sparse package"
