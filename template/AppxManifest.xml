@@ -11,7 +11,7 @@
   xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   IgnorableNamespaces="uap uap2 uap3 rescap desktop desktop4 desktop5 uap10 com">
-  <Identity Name="@@PackageName@@" ProcessorArchitecture="@@PackageArch@@" Publisher="CN=Microsoft Corporation" Version="1.0.0.0" />
+  <Identity Name="@@PackageName@@" ProcessorArchitecture="@@PackageArch@@" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="1.0.0.0" />
   <Properties>
     <DisplayName>@@PackageDisplayName@@</DisplayName>
     <PublisherDisplayName>Microsoft Corporation</PublisherDisplayName>
