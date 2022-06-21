@@ -11,26 +11,50 @@
   xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   IgnorableNamespaces="uap uap2 uap3 rescap desktop desktop4 desktop5 uap10 com">
-  <Identity Name="@@PackageName@@" ProcessorArchitecture="@@PackageArch@@" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="1.0.0.0" />
+  <Identity
+    Name="@@PackageName@@"
+    Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+    Version="1.0.0.0" />
   <Properties>
     <DisplayName>@@PackageDisplayName@@</DisplayName>
     <PublisherDisplayName>Microsoft Corporation</PublisherDisplayName>
-    <Logo>@@PackageLogo@@_150x150.png</Logo>
+    <Logo>resources\app\resources\win32\code_150x150.png</Logo>
     <uap10:AllowExternalContent>true</uap10:AllowExternalContent>
   </Properties>
   <Resources>
     <Resource Language="en-us" />
+    <Resource Language="es-es" />
+    <Resource Language="de-de" />
+    <Resource Language="fr-fr" />
+    <Resource Language="hu-hu" />
+    <Resource Language="it-it" />
+    <Resource Language="ja-jp" />
+    <Resource Language="ko-kr" />
+    <Resource Language="pt-br" />
+    <Resource Language="ru-ru" />
+    <Resource Language="tr-tr" />
+    <Resource Language="zh-cn" />
+    <Resource Language="zh-tw" />
   </Resources>
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19000.0" MaxVersionTested="10.0.19000.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19000.0" MaxVersionTested="10.0.22000.0" />
   </Dependencies>
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
     <rescap:Capability Name="unvirtualizedResources"/>
   </Capabilities>
   <Applications>
-    <Application Id="@@ApplicationIdShort@@" Executable="@@ApplicationId@@.exe" uap10:TrustLevel="mediumIL" uap10:RuntimeBehavior="win32App"> 
-      <uap:VisualElements AppListEntry="none" DisplayName="@@PackageDisplayName@@" Description="@@PackageDescription@@" BackgroundColor="transparent" Square150x150Logo="@@PackageLogo@@_150x150.png" Square44x44Logo="@@PackageLogo@@_70x70.png">
+    <Application Id="@@ApplicationIdShort@@"
+      Executable="@@Application@@"
+      uap10:TrustLevel="mediumIL"
+      uap10:RuntimeBehavior="win32App"> 
+      <uap:VisualElements 
+        AppListEntry="none"
+        DisplayName="@@PackageDisplayName@@"
+        Description="@@PackageDescription@@"
+        BackgroundColor="transparent"
+        Square150x150Logo="resources\app\resources\win32\code_150x150.png"
+        Square44x44Logo="resources\app\resources\win32\code_70x70.png">
       </uap:VisualElements>
       <Extensions>
         <desktop4:Extension Category="windows.fileExplorerContextMenus">
@@ -39,9 +63,6 @@
               <desktop5:Verb Id="@@MenuID@@" Clsid="@@CLSID@@" />
             </desktop5:ItemType>
             <desktop5:ItemType Type="Directory\Background">
-              <desktop5:Verb Id="@@MenuID@@" Clsid="@@CLSID@@" />
-            </desktop5:ItemType>
-            <desktop5:ItemType Type="*">
               <desktop5:Verb Id="@@MenuID@@" Clsid="@@CLSID@@" />
             </desktop5:ItemType>
           </desktop4:FileExplorerContextMenus>
