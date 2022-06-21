@@ -4,6 +4,7 @@
 
 #include <windows.h>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <utility>
@@ -74,15 +75,12 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
   }
 
   IFACEMETHODIMP GetIcon(IShellItemArray* items, PWSTR* icon) {
-    HKEY hkey;
-    wchar_t value_w[1024];
-    DWORD value_size_w = sizeof(value_w);
-    DWORD access_flags = KEY_QUERY_VALUE;
-    std::string full_registry_location(REGISTRY_LOCATION);
-    RETURN_IF_FAILED(RegOpenKeyExA(HKEY_CLASSES_ROOT, full_registry_location.c_str(), 0, access_flags, &hkey));
-    RETURN_IF_FAILED(RegGetValueW(hkey, nullptr, L"Icon", RRF_RT_REG_SZ | REG_EXPAND_SZ | RRF_ZEROONFAILURE,
-                                  NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
-    return SHStrDup(value_w, icon);
+    HMODULE handle = GetModuleHandleW(nullptr);
+    wchar_t module[MAX_PATH];
+    GetModuleFileNameW(handle, module, MAX_PATH);
+    std::filesystem::path prog_name = std::wstring(module);
+    prog_name.replace_filename(EXE_NAME);
+    return SHStrDup(prog_name.c_str(), icon);
   }
 
   IFACEMETHODIMP GetToolTip(IShellItemArray* items, PWSTR* infoTip) {
@@ -114,40 +112,32 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
     if (items) {
       DWORD count;
       RETURN_IF_FAILED(items->GetCount(&count));
-      HKEY hkey;
-			wchar_t value_w[1024];
-			DWORD value_size_w = sizeof(value_w);
-      DWORD access_flags = KEY_QUERY_VALUE;
-      std::string full_registry_location(REGISTRY_LOCATION);
-      full_registry_location += std::string("\\command");
-      RETURN_IF_FAILED(RegOpenKeyExA(HKEY_CLASSES_ROOT, full_registry_location.c_str(), 0, access_flags, &hkey));
-      RETURN_IF_FAILED(RegGetValueW(hkey, nullptr, L"", RRF_RT_REG_SZ | REG_EXPAND_SZ | RRF_ZEROONFAILURE,
-                                    NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
-      RETURN_IF_FAILED(RegCloseKey(hkey));
+      ComPtr<IShellItem> item;
+      RETURN_IF_FAILED(items->GetItemAt(0, &item));
+      LPWSTR path;
+      RETURN_IF_FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path));
 
-      std::wstring paths;
-      for (DWORD i = 0; i < count; ++i) {
-        ComPtr<IShellItem> item;
-        RETURN_IF_FAILED(items->GetItemAt(i, &item));
-        LPWSTR path;
-        RETURN_IF_FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path));
-        paths += L" " + std::wstring(TakeLocalAlloc(path).get());
-      }
+      HMODULE handle = GetModuleHandleW(nullptr);
+      wchar_t module[MAX_PATH];
+      GetModuleFileNameW(handle, module, MAX_PATH);
+      std::filesystem::path prog_name = std::wstring(module);
+      prog_name.replace_filename(EXE_NAME);
+      std::wstring command{prog_name.wstring() + L" "};
+      command += std::wstring(TakeLocalAlloc(path).get());
 
-      std::wstring command(value_w);
-      command.replace(command.find(L"%1"), 2, paths);
-
-      STARTUPINFOW startup_info = {sizeof(startup_info)};
+      STARTUPINFOEX startup_info{0};
+      startup_info.StartupInfo.cb = sizeof(STARTUPINFOEX);
       PROCESS_INFORMATION temp_process_info = {};
-      RETURN_IF_FAILED(CreateProcess(
-          nullptr, &command[0],
+      RETURN_IF_FAILED(CreateProcessW(
+          nullptr, command.data(),
           nullptr /* lpProcessAttributes */, nullptr /* lpThreadAttributes */,
-          FALSE /* bInheritHandles */, 0,
-          nullptr /* lpEnvironment */, nullptr /* lpCurrentDirectory */,
-          &startup_info, &temp_process_info));
+          false /* bInheritHandles */, 
+          EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
+          nullptr /* lpEnvironment */, path,
+          &startup_info.StartupInfo, &temp_process_info));
       // Close thread and process handles of the new process.
-      ::CloseHandle(temp_process_info.hProcess);
-      ::CloseHandle(temp_process_info.hThread);
+      CloseHandle(temp_process_info.hProcess);
+      CloseHandle(temp_process_info.hThread);
     }
     return S_OK;
   }

@@ -22,30 +22,26 @@ pkg_type = sys.argv[1]
 arch = sys.argv[2]
 pkg_dir = os.path.join(out_dir, pkg_type + '_explorer_pkg_' + arch)
 
-# Copy generated dll file to the package directory.
+# Create output directory.
 os.mkdir(pkg_dir)
-dll = os.path.join(out_dir, 'Default', pkg_type + '_explorer_command.dll')
-copy(dll, pkg_dir)
 
 # Update AppxManifest.
 manifest = os.path.join(root, 'template', 'AppxManifest.xml')
 with open(manifest, 'r') as f:
   content = f.read()
-  content = content.replace('@@PackageArch@@', arch)
   content = content.replace('@@PackageDLL@@', pkg_type + '_explorer_command.dll')
   content = content.replace('@@PackageDescription@@', pkg_type + ' context menu handler')
-  content = content.replace('@@PackageLogo@@', pkg_type)
   if pkg_type == 'code':
-    content = content.replace('@@PackageName@@', 'code')
+    content = content.replace('@@PackageName@@', 'Microsoft.VSCode')
     content = content.replace('@@PackageDisplayName@@', 'Visual Studio Code')
-    content = content.replace('@@ApplicationId@@', 'Code')
+    content = content.replace('@@Application@@', 'Code.exe')
     content = content.replace('@@ApplicationIdShort@@', 'Code')
     content = content.replace('@@MenuID@@', 'OpenWithCode')
     content = content.replace('@@CLSID@@', code_clsid_map[arch])
   if pkg_type == 'code_insiders':
-    content = content.replace('@@PackageName@@', 'code-insiders')
+    content = content.replace('@@PackageName@@', 'Microsoft.VSCodeInsiders')
     content = content.replace('@@PackageDisplayName@@', 'Visual Studio Code - Insiders')
-    content = content.replace('@@ApplicationId@@', 'Code - Insiders')
+    content = content.replace('@@Application@@', 'Code - Insiders.exe')
     content = content.replace('@@ApplicationIdShort@@', 'CodeInsiders')
     content = content.replace('@@MenuID@@', 'OpenWithCodeInsiders')
     content = content.replace('@@CLSID@@', code_insiders_clsid_map[arch])
@@ -54,8 +50,3 @@ with open(manifest, 'r') as f:
 manifest_output = os.path.join(pkg_dir, 'AppxManifest.xml')
 with open(manifest_output, 'w+') as f:
   f.write(content)
-
-# Copy Assets to the package directory.
-assets = os.path.join(root, 'assets')
-copy(os.path.join(assets, pkg_type + '_150x150.png'), pkg_dir)
-copy(os.path.join(assets, pkg_type + '_70x70.png'), pkg_dir)
