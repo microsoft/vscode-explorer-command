@@ -19,18 +19,39 @@ steps:
 - powershell: |
     python3 .\scripts\generate_pkg.py code $(arch) .\template\AppxManifest.xml
     python3 .\scripts\generate_pkg.py code_insiders $(arch) .\template\AppxManifest.xml
+    #
+    # Add Windows SDK to path
+    #
     $sdk = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64"
     #echo $makeappx
     #Dir -Recurse "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\$(arch)" | Get-Childitem
     $env:Path += ';' + $sdk
-    makepri new /cf .\template\priconfig.xml /pr .\strings /mn "./out/code_explorer_pkg_$(arch)/AppxManifest.xml" /of "./out/code_explorer_pkg_$(arch)/resources.pri"
-    makepri new /cf .\template\priconfig.xml /pr .\strings /mn "./out/code_insiders_explorer_pkg_$(arch)/AppxManifest.xml" /of "./out/code_insiders_explorer_pkg_$(arch)/resources.pri"
+    #
+    # Create Sparse Package for stable and insiders
+    #
     makeappx pack /d "out/code_explorer_pkg_$(arch)" /p "out/code_explorer_$(arch).appx" /nv
     makeappx pack /d "out/code_insiders_explorer_pkg_$(arch)" /p "out/code_insiders_explorer_$(arch).appx" /nv
+    #
+    # Create final packages for release
+    #
+    Compress-Archive -LiteralPath "out/code_explorer_$(arch).appx","out/Default/code_explorer_command.dll" -DestinationPath "out/code_explorer_$(arch).zip"
+    Compress-Archive -LiteralPath "out/code_insiders_explorer_$(arch).appx","out/Default/code_insiders_explorer_command.dll" -DestinationPath "out/code_insiders_explorer_$(arch).zip"
   displayName: Create sparse pkg
 
 - task: PublishPipelineArtifact@0
   inputs:
-    artifactName: output-$(arch)
-    targetPath: out
-  displayName: "Publish artifacts"
+    artifactName: code_explorer_$(arch)
+    targetPath: out/code_explorer_$(arch).zip
+  displayName: "Publish Stable Release artifacts"
+
+- task: PublishPipelineArtifact@0
+  inputs:
+    artifactName: code_insiders_explorer_$(arch)
+    targetPath: out/code_insiders_explorer_$(arch).zip
+  displayName: "Publish Insider Release artifacts"
+
+- task: PublishPipelineArtifact@0
+  inputs:
+    artifactName: output-$(arch)-debug
+    targetPath: out/Default
+  displayName: "Publish build artifacts"

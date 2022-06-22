@@ -6,6 +6,9 @@
           'src/explorer_command.cc',
           'src/explorer_command.def',
         ],
+        'include_dirs': [
+          'deps/wil/include',
+        ],
         'defines': [
           '_WINDLL',
           'WIN32_LEAN_AND_MEAN',
@@ -13,7 +16,6 @@
           'UNICODE',
           '_CRT_SECURE_NO_DEPRECATE',
           '_CRT_NONSTDC_NO_DEPRECATE',
-          '_HAS_EXCEPTIONS=0',
         ],
         'msvs_settings': {
           'VCLinkerTool': {
@@ -31,7 +33,7 @@
               '/guard:cf',
             ],
             'BufferSecurityCheck': 'true',
-            'ExceptionHandling': 0,               # /EHsc
+            'ExceptionHandling': 1,               # /EHsc
             'EnableFunctionLevelLinking': 'true',
             'Optimization': 3,              # /Ox, full optimization
           },
@@ -92,7 +94,6 @@
             'defines': [ 
               'DLL_UUID="B9949795-B37D-457F-ADDE-6A950EF85CA7"',
               'EXE_NAME="Code - Insiders.exe"',
-              'INSIDER=1',
             ],
           }],
           ['target_arch=="x64"', {
@@ -100,7 +101,6 @@
             'defines': [ 
               'DLL_UUID="799F4F7E-5934-4001-A74C-E207F44F05B8"',
               'EXE_NAME="Code - Insiders.exe"',
-              'INSIDER=1',
             ],
           }],
           ['target_arch=="arm64"', {
@@ -108,7 +108,6 @@
             'defines': [ 
               'DLL_UUID="7D34756D-32DD-4EE6-B99F-2691C0DAD875"',
               'EXE_NAME="Code - Insiders.exe"',
-              'INSIDER=1',
             ],
           }],
         ],

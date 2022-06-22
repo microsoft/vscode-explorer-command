@@ -5,7 +5,6 @@
 #include <windows.h>
 
 #include <filesystem>
-#include <memory>
 #include <string>
 #include <utility>
 
@@ -14,7 +13,9 @@
 #include <wrl/module.h>
 #include <wrl/implements.h>
 #include <wrl/client.h>
-#include <winrt/Windows.ApplicationModel.Resources.Core.h>
+#include "wil/stl.h"
+#include "wil/filesystem.h"
+#include "wil/win32_helpers.h"
 
 using Microsoft::WRL::ClassicCom;
 using Microsoft::WRL::ComPtr;
@@ -23,28 +24,6 @@ using Microsoft::WRL::Module;
 using Microsoft::WRL::ModuleType;
 using Microsoft::WRL::RuntimeClass;
 using Microsoft::WRL::RuntimeClassFlags;
-using namespace ::winrt::Windows::ApplicationModel::Resources::Core;
-
-#define RETURN_IF_FAILED(expr)                                          \
-  do {                                                                  \
-    HRESULT hresult = (expr);                                           \
-    if (FAILED(hresult)) {                                              \
-      return hresult;                                                   \
-    }                                                                   \
-  } while (0)
-
-namespace {
-
-struct LocalAllocDeleter {
-  void operator()(void* ptr) const { ::LocalFree(ptr); }
-};
-
-template <typename T>
-std::unique_ptr<T, LocalAllocDeleter> TakeLocalAlloc(T*& ptr) {
-  return std::unique_ptr<T, LocalAllocDeleter>(std::exchange(ptr, nullptr));
-}
-
-}
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE instance,
                                DWORD reason,
@@ -64,26 +43,22 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
  public:
   // IExplorerCommand implementation:
   IFACEMETHODIMP GetTitle(IShellItemArray* items, PWSTR* name) {
-    const auto resource =
-#if defined(INSIDER)
-      ResourceManager::Current().MainResourceMap()
-        .GetValue(L"ExplorerCommand_OpenWithCodeInsiders", ResourceContext::GetForViewIndependentUse())
-        .ValueAsString();
-#else
-      ResourceManager::Current().MainResourceMap()
-        .GetValue(L"ExplorerCommand_OpenWithCode", ResourceContext::GetForViewIndependentUse())
-        .ValueAsString();
-#endif
-    return SHStrDup(resource.data(), name);
+    HKEY hkey;
+    wchar_t value_w[MAX_PATH];
+    DWORD value_size_w = sizeof(value_w);
+    DWORD access_flags = KEY_QUERY_VALUE;
+    std::string full_registry_location(REGISTRY_LOCATION);
+    RETURN_IF_FAILED(RegOpenKeyExA(HKEY_CLASSES_ROOT, full_registry_location.c_str(), 0, access_flags, &hkey));
+    RETURN_IF_FAILED(RegGetValueW(hkey, nullptr, L"", RRF_RT_REG_SZ | REG_EXPAND_SZ | RRF_ZEROONFAILURE,
+                                  NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
+    RETURN_IF_FAILED(RegCloseKey(hkey));
+    return SHStrDup(value_w, name);
   }
 
   IFACEMETHODIMP GetIcon(IShellItemArray* items, PWSTR* icon) {
-    HMODULE handle = GetModuleHandleW(nullptr);
-    wchar_t module[MAX_PATH];
-    GetModuleFileNameW(handle, module, MAX_PATH);
-    std::filesystem::path prog_name = std::wstring(module);
-    prog_name.replace_filename(EXE_NAME);
-    return SHStrDup(prog_name.c_str(), icon);
+    std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
+    module_path.replace_filename(EXE_NAME);
+    return SHStrDupW(module_path.c_str(), icon);
   }
 
   IFACEMETHODIMP GetToolTip(IShellItemArray* items, PWSTR* infoTip) {
@@ -117,30 +92,27 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
       RETURN_IF_FAILED(items->GetCount(&count));
       ComPtr<IShellItem> item;
       RETURN_IF_FAILED(items->GetItemAt(0, &item));
-      LPWSTR path;
+      wil::unique_cotaskmem_string path;
       RETURN_IF_FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path));
 
-      HMODULE handle = GetModuleHandleW(nullptr);
-      wchar_t module[MAX_PATH];
-      GetModuleFileNameW(handle, module, MAX_PATH);
-      std::filesystem::path prog_name = std::wstring(module);
-      prog_name.replace_filename(EXE_NAME);
-      std::wstring command{prog_name.wstring() + L" "};
-      command += std::wstring(TakeLocalAlloc(path).get());
+      std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
+      module_path.replace_filename(EXE_NAME);
+      auto command{ wil::str_printf<std::wstring>(LR"-("%s" %s)-", module_path.c_str(), std::wstring(path.get()).c_str()) };
 
+      wil::unique_process_information process_info;
       STARTUPINFOEX startup_info{0};
       startup_info.StartupInfo.cb = sizeof(STARTUPINFOEX);
-      PROCESS_INFORMATION temp_process_info = {};
-      RETURN_IF_FAILED(CreateProcessW(
-          nullptr, command.data(),
-          nullptr /* lpProcessAttributes */, nullptr /* lpThreadAttributes */,
+      RETURN_IF_WIN32_BOOL_FALSE(CreateProcessW(
+          nullptr,
+          command.data(),
+          nullptr /* lpProcessAttributes */,
+          nullptr /* lpThreadAttributes */,
           false /* bInheritHandles */, 
           EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
-          nullptr /* lpEnvironment */, path,
-          &startup_info.StartupInfo, &temp_process_info));
-      // Close thread and process handles of the new process.
-      CloseHandle(temp_process_info.hProcess);
-      CloseHandle(temp_process_info.hThread);
+          nullptr /* lpEnvironment */,
+          path.get(),
+          &startup_info.StartupInfo,
+          &process_info));
     }
     return S_OK;
   }
