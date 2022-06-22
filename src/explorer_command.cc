@@ -14,6 +14,7 @@
 #include <wrl/module.h>
 #include <wrl/implements.h>
 #include <wrl/client.h>
+#include <winrt/Windows.ApplicationModel.Resources.Core.h>
 
 using Microsoft::WRL::ClassicCom;
 using Microsoft::WRL::ComPtr;
@@ -22,6 +23,7 @@ using Microsoft::WRL::Module;
 using Microsoft::WRL::ModuleType;
 using Microsoft::WRL::RuntimeClass;
 using Microsoft::WRL::RuntimeClassFlags;
+using namespace ::winrt::Windows::ApplicationModel::Resources::Core;
 
 #define RETURN_IF_FAILED(expr)                                          \
   do {                                                                  \
@@ -62,16 +64,17 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
  public:
   // IExplorerCommand implementation:
   IFACEMETHODIMP GetTitle(IShellItemArray* items, PWSTR* name) {
-    HKEY hkey;
-    wchar_t value_w[1024];
-    DWORD value_size_w = sizeof(value_w);
-    DWORD access_flags = KEY_QUERY_VALUE;
-    std::string full_registry_location(REGISTRY_LOCATION);
-    RETURN_IF_FAILED(RegOpenKeyExA(HKEY_CLASSES_ROOT, full_registry_location.c_str(), 0, access_flags, &hkey));
-    RETURN_IF_FAILED(RegGetValueW(hkey, nullptr, L"", RRF_RT_REG_SZ | REG_EXPAND_SZ | RRF_ZEROONFAILURE,
-                                  NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
-    RETURN_IF_FAILED(RegCloseKey(hkey));
-    return SHStrDup(value_w, name);
+    const auto resource =
+#if defined(INSIDER)
+      ResourceManager::Current().MainResourceMap()
+        .GetValue(L"ExplorerCommand_OpenWithCodeInsiders", ResourceContext::GetForViewIndependentUse())
+        .ValueAsString();
+#else
+      ResourceManager::Current().MainResourceMap()
+        .GetValue(L"ExplorerCommand_OpenWithCode", ResourceContext::GetForViewIndependentUse())
+        .ValueAsString();
+#endif
+    return SHStrDup(resource.data(), name);
   }
 
   IFACEMETHODIMP GetIcon(IShellItemArray* items, PWSTR* icon) {
