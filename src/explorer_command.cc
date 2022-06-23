@@ -10,6 +10,7 @@
 
 #include <shlwapi.h>
 #include <shobjidl_core.h>
+#include <userenv.h>
 #include <wrl/module.h>
 #include <wrl/implements.h>
 #include <wrl/client.h>
@@ -43,15 +44,15 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
  public:
   // IExplorerCommand implementation:
   IFACEMETHODIMP GetTitle(IShellItemArray* items, PWSTR* name) {
-    HKEY hkey;
     wchar_t value_w[MAX_PATH];
     DWORD value_size_w = sizeof(value_w);
-    DWORD access_flags = KEY_QUERY_VALUE;
-    std::string full_registry_location(REGISTRY_LOCATION);
-    RETURN_IF_FAILED(RegOpenKeyExA(HKEY_CLASSES_ROOT, full_registry_location.c_str(), 0, access_flags, &hkey));
-    RETURN_IF_FAILED(RegGetValueW(hkey, nullptr, L"", RRF_RT_REG_SZ | REG_EXPAND_SZ | RRF_ZEROONFAILURE,
+#if defined(INSIDER)
+    RETURN_IF_FAILED(RegGetValueW(HKEY_CLASSES_ROOT, L"*\\shell\\VSCodeInsiders", L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
                                   NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
-    RETURN_IF_FAILED(RegCloseKey(hkey));
+#else
+    RETURN_IF_FAILED(RegGetValueW(HKEY_CLASSES_ROOT, L"*\\shell\\VSCode", L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
+                                  NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
+#endif
     return SHStrDup(value_w, name);
   }
 
@@ -88,31 +89,34 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
 
   IFACEMETHODIMP Invoke(IShellItemArray* items, IBindCtx* bindCtx) {
     if (items) {
-      DWORD count;
-      RETURN_IF_FAILED(items->GetCount(&count));
-      ComPtr<IShellItem> item;
-      RETURN_IF_FAILED(items->GetItemAt(0, &item));
-      wil::unique_cotaskmem_string path;
-      RETURN_IF_FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path));
-
       std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
       module_path.replace_filename(EXE_NAME);
-      auto command{ wil::str_printf<std::wstring>(LR"-("%s" %s)-", module_path.c_str(), std::wstring(path.get()).c_str()) };
-
-      wil::unique_process_information process_info;
-      STARTUPINFOEX startup_info{0};
-      startup_info.StartupInfo.cb = sizeof(STARTUPINFOEX);
-      RETURN_IF_WIN32_BOOL_FALSE(CreateProcessW(
-          nullptr,
-          command.data(),
-          nullptr /* lpProcessAttributes */,
-          nullptr /* lpThreadAttributes */,
-          false /* bInheritHandles */, 
-          EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
-          nullptr /* lpEnvironment */,
-          path.get(),
-          &startup_info.StartupInfo,
-          &process_info));
+      DWORD count;
+      RETURN_IF_FAILED(items->GetCount(&count));
+      for (DWORD i = 0; i < count; ++i) {
+        ComPtr<IShellItem> item;
+        auto result = items->GetItemAt(i, &item);
+        if (SUCCEEDED(result)) {
+          wil::unique_cotaskmem_string path;
+          result = item->GetDisplayName(SIGDN_FILESYSPATH, &path);
+          if (SUCCEEDED(result)) {
+            auto command{ wil::str_printf<std::wstring>(LR"-("%s" %s)-", module_path.c_str(), std::wstring(path.get()).c_str()) };
+            wil::unique_process_information process_info;
+            STARTUPINFOW startup_info = {sizeof(startup_info)};
+            RETURN_IF_WIN32_BOOL_FALSE(CreateProcessW(
+              nullptr,
+              command.data(),
+              nullptr /* lpProcessAttributes */,
+              nullptr /* lpThreadAttributes */,
+              false /* bInheritHandles */, 
+              CREATE_NO_WINDOW,
+              nullptr,
+              nullptr,
+              &startup_info,
+              &process_info));
+          }
+        }
+      }
     }
     return S_OK;
   }
