@@ -40,6 +40,54 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance,
   return true;
 }
 
+namespace {
+  // Extracted from
+  // https://source.chromium.org/chromium/chromium/src/+/main:base/command_line.cc;l=109-159
+
+  std::wstring QuoteForCommandLineArg(const std::wstring& arg) {
+  // We follow the quoting rules of CommandLineToArgvW.
+  // http://msdn.microsoft.com/en-us/library/17w5ykft.aspx
+  std::wstring quotable_chars(L" \\\"");
+  if (arg.find_first_of(quotable_chars) == std::wstring::npos) {
+    // No quoting necessary.
+    return arg;
+  }
+
+  std::wstring out;
+  out.push_back('"');
+  for (size_t i = 0; i < arg.size(); ++i) {
+    if (arg[i] == '\\') {
+      // Find the extent of this run of backslashes.
+      size_t start = i, end = start + 1;
+      for (; end < arg.size() && arg[end] == '\\'; ++end) {}
+      size_t backslash_count = end - start;
+
+      // Backslashes are escapes only if the run is followed by a double quote.
+      // Since we also will end the string with a double quote, we escape for
+      // either a double quote or the end of the string.
+      if (end == arg.size() || arg[end] == '"') {
+        // To quote, we need to output 2x as many backslashes.
+        backslash_count *= 2;
+      }
+      for (size_t j = 0; j < backslash_count; ++j)
+        out.push_back('\\');
+
+      // Advance i to one before the end to balance i++ in loop.
+      i = end - 1;
+    } else if (arg[i] == '"') {
+      out.push_back('\\');
+      out.push_back('"');
+    } else {
+      out.push_back(arg[i]);
+    }
+  }
+  out.push_back('"');
+
+  return out;
+}
+
+}
+
 class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeClass<RuntimeClassFlags<ClassicCom | InhibitRoOriginateError>, IExplorerCommand> {
  public:
   // IExplorerCommand implementation:
@@ -47,18 +95,23 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
     wchar_t value_w[MAX_PATH];
     DWORD value_size_w = sizeof(value_w);
 #if defined(INSIDER)
-    RETURN_IF_FAILED(RegGetValueW(HKEY_CLASSES_ROOT, L"*\\shell\\VSCodeInsiders", L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
-                                  NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
+    const wchar_t kTitleRegkey[] = L"*\\shell\\VSCodeInsiders";
 #else
-    RETURN_IF_FAILED(RegGetValueW(HKEY_CLASSES_ROOT, L"*\\shell\\VSCode", L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
-                                  NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
+    const wchar_t kTitleRegkey[] = L"*\\shell\\VSCode";
 #endif
+    LONG result = RegGetValueW(HKEY_LOCAL_MACHINE, kTitleRegkey, L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
+                               NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w);
+    if (result != ERROR_SUCCESS || value_size_w == 0) {
+      RETURN_IF_FAILED(RegGetValueW(HKEY_CURRENT_USER, kTitleRegkey, L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
+                                    NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
+    }
     return SHStrDup(value_w, name);
   }
 
   IFACEMETHODIMP GetIcon(IShellItemArray* items, PWSTR* icon) {
     std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
-    module_path.replace_filename(EXE_NAME);
+    module_path = module_path.remove_filename().parent_path().parent_path();
+    module_path /= EXE_NAME;
     return SHStrDupW(module_path.c_str(), icon);
   }
 
@@ -90,7 +143,8 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
   IFACEMETHODIMP Invoke(IShellItemArray* items, IBindCtx* bindCtx) {
     if (items) {
       std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
-      module_path.replace_filename(EXE_NAME);
+      module_path = module_path.remove_filename().parent_path().parent_path();
+      module_path /= EXE_NAME;
       DWORD count;
       RETURN_IF_FAILED(items->GetCount(&count));
       for (DWORD i = 0; i < count; ++i) {
@@ -100,7 +154,7 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
           wil::unique_cotaskmem_string path;
           result = item->GetDisplayName(SIGDN_FILESYSPATH, &path);
           if (SUCCEEDED(result)) {
-            auto command{ wil::str_printf<std::wstring>(LR"-("%s" %s)-", module_path.c_str(), std::wstring(path.get()).c_str()) };
+            auto command{ wil::str_printf<std::wstring>(LR"-("%s" %s)-", module_path.c_str(), QuoteForCommandLineArg(path.get()).c_str()) };
             wil::unique_process_information process_info;
             STARTUPINFOW startup_info = {sizeof(startup_info)};
             RETURN_IF_WIN32_BOOL_FALSE(CreateProcessW(
