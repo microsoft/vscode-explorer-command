@@ -95,14 +95,14 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
     wchar_t value_w[MAX_PATH];
     DWORD value_size_w = sizeof(value_w);
 #if defined(INSIDER)
-    const wchar_t kTitleRegkey[] = L"*\\shell\\VSCodeInsiders";
+    const wchar_t kTitleRegkey[] = L"Software\\Microsoft\\VSCodeInsiders\\ContextMenu";
 #else
-    const wchar_t kTitleRegkey[] = L"*\\shell\\VSCode";
+    const wchar_t kTitleRegkey[] = L"Software\\Microsoft\\VSCode\\ContextMenu";
 #endif
-    LONG result = RegGetValueW(HKEY_LOCAL_MACHINE, kTitleRegkey, L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
+    LONG result = RegGetValueW(HKEY_LOCAL_MACHINE, kTitleRegkey, L"Title", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
                                NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w);
     if (result != ERROR_SUCCESS || value_size_w == 0) {
-      RETURN_IF_FAILED(RegGetValueW(HKEY_CURRENT_USER, kTitleRegkey, L"", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
+      RETURN_IF_FAILED(RegGetValueW(HKEY_CURRENT_USER, kTitleRegkey, L"Title", RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND,
                                     NULL, reinterpret_cast<LPBYTE>(&value_w), &value_size_w));
     }
     return SHStrDup(value_w, name);
