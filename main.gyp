@@ -69,7 +69,7 @@
             ],
           }],
           ['target_arch=="arm64"', {
-            'TargetMachine' : 0,
+            'TargetMachine' : 18,             # /MACHINE:ARM64 https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.vcprojectengine.machinetypeoption?view=visualstudiosdk-2022
             'defines': [ 
               'DLL_UUID="F5EA5883-1DA8-4A05-864A-D5DE2D2B2854"',
             ],
@@ -100,7 +100,7 @@
             ],
           }],
           ['target_arch=="arm64"', {
-            'TargetMachine' : 0,
+            'TargetMachine' : 18,             # /MACHINE:ARM64
             'defines': [ 
               'DLL_UUID="7D34756D-32DD-4EE6-B99F-2691C0DAD875"',
             ],
