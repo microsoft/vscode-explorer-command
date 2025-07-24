@@ -8,7 +8,6 @@ steps:
     git submodule update --init
     $env:GYP_MSVS_VERSION="2022"
     python3 .\gyp_library.py $(arch)
-    #Dir -Recurse . | Get-Childitem
   displayName: Generate project solution
 
 - task: MSBuild@1
@@ -16,42 +15,18 @@ steps:
     solution: out/main.sln
     msbuildArchitecture: $(arch)
 
-- powershell: |
-    python3 .\scripts\generate_pkg.py code $(arch) .\template\AppxManifest.xml
-    python3 .\scripts\generate_pkg.py code_insiders $(arch) .\template\AppxManifest.xml
-    #
-    # Add Windows SDK to path
-    #
-    $sdk = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64"
-    #echo $makeappx
-    #Dir -Recurse "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\$(arch)" | Get-Childitem
-    $env:Path += ';' + $sdk
-    #
-    # Create Sparse Package for stable and insiders
-    #
-    makeappx pack /d "out/code_explorer_pkg_$(arch)" /p "out/code_explorer_$(arch).appx" /nv
-    makeappx pack /d "out/code_insiders_explorer_pkg_$(arch)" /p "out/code_insiders_explorer_$(arch).appx" /nv
-    #
-    # Create final packages for release
-    #
-    Compress-Archive -LiteralPath "out/code_explorer_$(arch).appx","out/Default/code_explorer_command.dll" -DestinationPath "out/code_explorer_$(arch).zip"
-    Compress-Archive -LiteralPath "out/code_insiders_explorer_$(arch).appx","out/Default/code_insiders_explorer_command.dll" -DestinationPath "out/code_insiders_explorer_$(arch).zip"
-  displayName: Create sparse pkg
-
-- task: PublishPipelineArtifact@0
+- task: 1ES.PublishPipelineArtifact@1
+  displayName: 'Publish DLL'
   inputs:
-    artifactName: code_explorer_$(arch)
-    targetPath: out/code_explorer_$(arch).zip
-  displayName: "Publish Stable Release artifacts"
+    targetPath: out/Default/code_insider_explorer_command.dll
+    artifactName: win-$(arch)-insider
+    sbomBuildDropPath: $(Build.ArtifactStagingDirectory)
+    sbomBuildComponentPath: out/Default
 
-- task: PublishPipelineArtifact@0
+- task: 1ES.PublishPipelineArtifact@1
+  displayName: 'Publish DLL'
   inputs:
-    artifactName: code_insiders_explorer_$(arch)
-    targetPath: out/code_insiders_explorer_$(arch).zip
-  displayName: "Publish Insider Release artifacts"
-
-- task: PublishPipelineArtifact@0
-  inputs:
-    artifactName: output-$(arch)-debug
-    targetPath: out/Default
-  displayName: "Publish build artifacts"
+    targetPath: out/Default/code_explorer_command.dll
+    artifactName: win-$(arch)
+    sbomBuildDropPath: $(Build.ArtifactStagingDirectory)
+    sbomBuildComponentPath: out/Default
