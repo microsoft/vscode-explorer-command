@@ -1,0 +1,73 @@
+{
+  "properties": {
+    "helpUri": "https://eng.ms/docs/microsoft-security/security/azure-security/cloudai-security-fundamentals-engineering/security-integration/guardian-wiki/microsoft-guardian/general/baselines"
+  },
+  "version": "1.0.0",
+  "baselines": {
+    "default": {
+      "name": "default",
+      "createdDate": "2025-07-24 22:08:27Z",
+      "lastUpdatedDate": "2025-07-24 22:08:27Z"
+    }
+  },
+  "results": {
+    "4a6b25e0b3aea187fc1e53d51e01caeabbe62585e176d36f48232c3bbf0c9077": {
+      "signature": "4a6b25e0b3aea187fc1e53d51e01caeabbe62585e176d36f48232c3bbf0c9077",
+      "alternativeSignatures": [],
+      "target": "node-gyp/test/fixtures/certs.js",
+      "line": 2,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0020",
+      "createdDate": "2025-07-24 22:08:27Z",
+      "expirationDate": "2026-01-10 22:12:27Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-07-24 22:12:27Z"
+    },
+    "772e22b80b32213274449f150729538f73295ae2144bfa0eb35cf6d90fd1934c": {
+      "signature": "772e22b80b32213274449f150729538f73295ae2144bfa0eb35cf6d90fd1934c",
+      "alternativeSignatures": [],
+      "target": "node-gyp/test/fixtures/certs.js",
+      "line": 57,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0020",
+      "createdDate": "2025-07-24 22:08:27Z",
+      "expirationDate": "2026-01-10 22:12:27Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-07-24 22:12:27Z"
+    },
+    "ec196711eb615090c0fd0a3089031c6611e7afc5546db0ac994faec8beb4ec33": {
+      "signature": "ec196711eb615090c0fd0a3089031c6611e7afc5546db0ac994faec8beb4ec33",
+      "alternativeSignatures": [
+        "8441789d8d406bd42106d0bd2d445afff69abe41c0b11f4193973c28221d6c8f"
+      ],
+      "target": "out/Default/code_insider_explorer_command.dll",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-07-24 22:09:08Z",
+      "expirationDate": "2026-01-10 22:12:27Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-07-24 22:12:27Z"
+    },
+    "e04c59fabb3bd81497dcd3545154fd63bb275b0bbaa9c586da94ac0f0a27b926": {
+      "signature": "e04c59fabb3bd81497dcd3545154fd63bb275b0bbaa9c586da94ac0f0a27b926",
+      "alternativeSignatures": [
+        "848da9a7d8e6652f7a527e7c211d99ffa7bf5c35f7d0ff01ee8df573f7fa123c"
+      ],
+      "target": "out/Default/code_explorer_command.dll",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-07-24 22:10:37Z",
+      "expirationDate": "2026-01-10 22:12:27Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-07-24 22:12:27Z"
+    }
+  }
+}
