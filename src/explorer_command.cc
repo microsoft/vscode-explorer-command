@@ -40,10 +40,9 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance,
 }
 
 namespace {
-  // Extracted from
-  // https://source.chromium.org/chromium/chromium/src/+/main:base/command_line.cc;l=109-159
-
-  std::wstring QuoteForCommandLineArg(const std::wstring& arg) {
+// Extracted from
+// https://source.chromium.org/chromium/chromium/src/+/main:base/command_line.cc;l=109-159
+std::wstring QuoteForCommandLineArg(const std::wstring& arg) {
   // We follow the quoting rules of CommandLineToArgvW.
   // http://msdn.microsoft.com/en-us/library/17w5ykft.aspx
   std::wstring quotable_chars(L" \\\"");
@@ -85,35 +84,83 @@ namespace {
   return out;
 }
 
+static int IsContextMenuEnabled() {
+  static int enabled = -1;
+  HKEY subhkey;
+  int err;
+#if defined(INSIDER)
+    const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeInsidersContextMenu";
+#else
+    const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeContextMenu";
+#endif
+
+  if (enabled != -1)
+    return enabled;
+
+  // Check if the context menu is enabled in the registry.
+  err = RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                      kTitleRegkey,
+                      0,
+                      KEY_QUERY_VALUE | KEY_WOW64_64KEY,
+                      &subhkey);
+  if (err != ERROR_SUCCESS) {
+    err = RegOpenKeyExW(HKEY_CURRENT_USER,
+                        kTitleRegkey,
+                        0,
+                        KEY_QUERY_VALUE | KEY_WOW64_64KEY,
+                        &subhkey);
+  }
+
+  if (err != ERROR_SUCCESS) {
+    enabled = 0;
+  } else {
+    enabled = 1;
+    RegCloseKey(subhkey);
+  }
+
+  return enabled;
+}
+
 }
 
 class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeClass<RuntimeClassFlags<ClassicCom | InhibitRoOriginateError>, IExplorerCommand> {
  public:
   // IExplorerCommand implementation:
   IFACEMETHODIMP GetTitle(IShellItemArray* items, PWSTR* name) {
-    const size_t kMaxStringLength = 1024;
-    wchar_t value_w[kMaxStringLength];
-    wchar_t expanded_value_w[kMaxStringLength];
-    DWORD value_size_w = sizeof(value_w);
+    static std::wstring cached_title;
+    static bool title_cached = false;
+    
+    if (!title_cached) {
+      const size_t kMaxStringLength = 1024;
+      wchar_t value_w[kMaxStringLength];
+      wchar_t expanded_value_w[kMaxStringLength];
+      DWORD value_size_w = sizeof(value_w);
 #if defined(INSIDER)
-    const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeInsidersContextMenu";
+      const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeInsidersContextMenu";
 #else
-    const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeContextMenu";
+      const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeContextMenu";
 #endif
-    HKEY subhkey = nullptr;
-    LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, kTitleRegkey, 0, KEY_READ, &subhkey);
-    if (result != ERROR_SUCCESS) {
-      result = RegOpenKeyEx(HKEY_CURRENT_USER, kTitleRegkey, 0, KEY_READ, &subhkey);
-    }
+      HKEY subhkey = nullptr;
+      LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, kTitleRegkey, 0, KEY_READ, &subhkey);
+      if (result != ERROR_SUCCESS) {
+        result = RegOpenKeyEx(HKEY_CURRENT_USER, kTitleRegkey, 0, KEY_READ, &subhkey);
+      }
 
-    DWORD type = REG_EXPAND_SZ;
-    RegQueryValueEx(subhkey, L"Title", nullptr, &type,
-                    reinterpret_cast<LPBYTE>(&value_w), &value_size_w);
-    RegCloseKey(subhkey);
-    value_size_w = ExpandEnvironmentStrings(value_w, expanded_value_w, kMaxStringLength);
-    return (value_size_w && value_size_w < kMaxStringLength)
-        ? SHStrDup(expanded_value_w, name)
-        : SHStrDup(L"UnExpected Title", name);
+      DWORD type = REG_EXPAND_SZ;
+      RegQueryValueEx(subhkey, L"Title", nullptr, &type,
+                      reinterpret_cast<LPBYTE>(&value_w), &value_size_w);
+      RegCloseKey(subhkey);
+      value_size_w = ExpandEnvironmentStrings(value_w, expanded_value_w, kMaxStringLength);
+      
+      if (value_size_w && value_size_w < kMaxStringLength) {
+        cached_title = expanded_value_w;
+      } else {
+        cached_title = L"UnExpected Title";
+      }
+      title_cached = true;
+    }
+    
+    return SHStrDup(cached_title.c_str(), name);
   }
 
   IFACEMETHODIMP GetIcon(IShellItemArray* items, PWSTR* icon) {
@@ -134,7 +181,11 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
   }
 
   IFACEMETHODIMP GetState(IShellItemArray* items, BOOL okToBeSlow, EXPCMDSTATE* cmdState) {
-    *cmdState = ECS_ENABLED;
+#if defined(INSIDER)
+    *cmdState = IsContextMenuEnabled() ? ECS_ENABLED : ECS_HIDDEN;
+#else
+    *cmdState = ECS_HIDDEN;
+#endif
     return S_OK;
   }
 
