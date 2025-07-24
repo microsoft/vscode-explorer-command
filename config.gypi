@@ -1,1 +1,1 @@
-{'variables': {'target_arch': 'x86'}}
+{'variables': {'target_arch': 'x64'}}

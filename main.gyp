@@ -56,12 +56,6 @@
     'conditions': [
       [ 'OS=="win"', {
         'conditions': [
-          ['target_arch=="x86"', {
-            'TargetMachine' : 1,              # /MACHINE:X86
-            'defines': [ 
-              'DLL_UUID="0632BBFB-D195-4972-B458-53ADEB984588"',
-            ],
-          }],
           ['target_arch=="x64"', {
             'TargetMachine' : 17,             # /MACHINE:X64
             'defines': [ 
@@ -78,7 +72,7 @@
       }],
     ],
   }, {
-    'target_name': 'code_insiders_explorer_command',
+    'target_name': 'code_insider_explorer_command',
     'type': 'shared_library',
     'defines': [
       'EXE_NAME="Code - Insiders.exe"',
@@ -87,12 +81,6 @@
     'conditions': [
       [ 'OS=="win"', {
         'conditions': [
-          ['target_arch=="x86"', {
-            'TargetMachine' : 1,              # /MACHINE:X86
-            'defines': [ 
-              'DLL_UUID="B9949795-B37D-457F-ADDE-6A950EF85CA7"',
-            ],
-          }],
           ['target_arch=="x64"', {
             'TargetMachine' : 17,             # /MACHINE:X64
             'defines': [ 
