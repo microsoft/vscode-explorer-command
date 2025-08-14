@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 #include <windows.h>
+#include <shellapi.h>
 
 #include <filesystem>
 #include <string>
@@ -213,20 +214,10 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
           wil::unique_cotaskmem_string path;
           result = item->GetDisplayName(SIGDN_FILESYSPATH, &path);
           if (SUCCEEDED(result)) {
-            auto command{ wil::str_printf<std::wstring>(LR"-("%s" %s)-", module_path.c_str(), QuoteForCommandLineArg(path.get()).c_str()) };
-            wil::unique_process_information process_info;
-            STARTUPINFOW startup_info = {sizeof(startup_info)};
-            RETURN_IF_WIN32_BOOL_FALSE(CreateProcessW(
-              nullptr,
-              command.data(),
-              nullptr /* lpProcessAttributes */,
-              nullptr /* lpThreadAttributes */,
-              false /* bInheritHandles */, 
-              CREATE_NO_WINDOW,
-              nullptr,
-              nullptr,
-              &startup_info,
-              &process_info));
+            HINSTANCE ret = ShellExecuteW(nullptr, L"open", module_path.c_str(), QuoteForCommandLineArg(path.get()).c_str(), nullptr, SW_SHOW);
+            if ((INT_PTR)ret <= HINSTANCE_ERROR) {
+              RETURN_LAST_ERROR();
+            }
           }
         }
       }
