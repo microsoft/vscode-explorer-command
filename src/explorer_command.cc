@@ -165,7 +165,7 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
 
   IFACEMETHODIMP GetIcon(IShellItemArray* items, PWSTR* icon) {
     std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
-    module_path = module_path.remove_filename().parent_path().parent_path();
+    module_path = module_path.remove_filename().parent_path().parent_path().parent_path();
     module_path /= EXE_NAME;
     return SHStrDupW(module_path.c_str(), icon);
   }
@@ -202,7 +202,7 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
   IFACEMETHODIMP Invoke(IShellItemArray* items, IBindCtx* bindCtx) {
     if (items) {
       std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
-      module_path = module_path.remove_filename().parent_path().parent_path();
+      module_path = module_path.remove_filename().parent_path().parent_path().parent_path();
       module_path /= EXE_NAME;
       DWORD count;
       RETURN_IF_FAILED(items->GetCount(&count));
