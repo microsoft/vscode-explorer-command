@@ -109,4 +109,4 @@ extends:
                     action: create
                     addChangeLog: false
                     tagSource: userSpecifiedTag
-                    tag: v4.0.0-$(Build.BuildNumber)
+                    tag: v5.0.0-$(Build.BuildNumber)
