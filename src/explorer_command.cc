@@ -185,11 +185,7 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
   }
 
   IFACEMETHODIMP GetState(IShellItemArray* items, BOOL okToBeSlow, EXPCMDSTATE* cmdState) {
-#if defined(INSIDER)
     *cmdState = IsContextMenuEnabled() ? ECS_ENABLED : ECS_HIDDEN;
-#else
-    *cmdState = ECS_HIDDEN;
-#endif
     return S_OK;
   }
 
