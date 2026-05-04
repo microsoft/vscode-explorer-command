@@ -13,7 +13,8 @@ steps:
 - task: MSBuild@1
   inputs:
     solution: out/main.sln
-    msbuildArchitecture: $(arch)
+    platform: ${{ replace(variables['arch'], 'arm64', 'ARM64') }}
+    configuration: Default
 
 - task: 1ES.PublishPipelineArtifact@1
   displayName: 'Publish DLL'

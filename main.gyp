@@ -35,7 +35,7 @@
             'BufferSecurityCheck': 'true',
             'ExceptionHandling': 1,               # /EHsc
             'EnableFunctionLevelLinking': 'true',
-            'Optimization': 3,              # /Ox, full optimization
+            'Optimization': 3,                    # /Ox, full optimization
           },
         },
         'libraries': [
@@ -43,7 +43,15 @@
           '-lruntimeobject.lib',
           '-lshlwapi.lib',
           '-lonecore.lib',
-        ]
+        ],
+        'conditions': [
+          ['target_arch=="x64"', {
+            'msvs_configuration_platform': 'x64',
+          }],
+          ['target_arch=="arm64"', {
+            'msvs_configuration_platform': 'ARM64',
+          }],
+        ],
       }],
     ],
   },
@@ -57,14 +65,12 @@
       [ 'OS=="win"', {
         'conditions': [
           ['target_arch=="x64"', {
-            'TargetMachine' : 17,             # /MACHINE:X64
-            'defines': [ 
+            'defines': [
               'DLL_UUID="1C6DF0C0-192A-4451-BE36-6A59A86A692E"',
             ],
           }],
           ['target_arch=="arm64"', {
-            'TargetMachine' : 18,             # /MACHINE:ARM64 https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.vcprojectengine.machinetypeoption?view=visualstudiosdk-2022
-            'defines': [ 
+            'defines': [
               'DLL_UUID="F5EA5883-1DA8-4A05-864A-D5DE2D2B2854"',
             ],
           }],
@@ -82,14 +88,12 @@
       [ 'OS=="win"', {
         'conditions': [
           ['target_arch=="x64"', {
-            'TargetMachine' : 17,             # /MACHINE:X64
-            'defines': [ 
+            'defines': [
               'DLL_UUID="799F4F7E-5934-4001-A74C-E207F44F05B8"',
             ],
           }],
           ['target_arch=="arm64"', {
-            'TargetMachine' : 18,             # /MACHINE:ARM64
-            'defines': [ 
+            'defines': [
               'DLL_UUID="7D34756D-32DD-4EE6-B99F-2691C0DAD875"',
             ],
           }],
